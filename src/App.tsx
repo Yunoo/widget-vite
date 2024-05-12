@@ -1,13 +1,18 @@
-// import { useState } from 'react'
 import "./App.css";
 import Fetch from "./components/Fetch";
 
-function App() {
-  // const [count, setCount] = useState(0)
+const DEFAULT_CITY = "Copenhagen";
+let city: string | null;
 
+if (typeof window !== "undefined") {
+  const queryParams = new URLSearchParams(location.search);
+  city = queryParams.get("city") || DEFAULT_CITY;
+}
+
+function App() {
   return (
     <div>
-      <Fetch />
+      <Fetch city={city} />
     </div>
   );
 }

@@ -1,14 +1,32 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default ({ city = "Copenhagen" }) => {
-  const [text, setCity] = useState(city);
+import { getWindDirection } from "../utils/wind";
+
+export default ({ city }) => {
+  const [searchText, setSearchText] = useState(city);
   const [weatherData, setWeatherData] = useState([]);
 
-  const fetchWeatherData = async () => {
+  // const location = useLocation();
+  const navigate = useNavigate();
+
+  // Update QS params when searching
+  const updateNavigation = () => {
+    // const params = new URLSearchParams();
+    // params.set("city", searchText);
+    // const newUrl = `${window.location.pathname}?${params.toString()}`;
+    // window.history.pushState({}, "", newUrl);
+    const queryString = `?city=${searchText}`;
+    navigate(`/${queryString}`, { replace: true });
+  };
+
+  const fetchWeatherData = async (ignore) => {
+    if (!searchText || searchText === "") return;
     try {
       const apiKey = "032b6100f98b3d5392916fbf2ae7339c";
       const url = new URL("https://api.openweathermap.org/data/2.5/weather");
-      url.search = `?q=${text}&units=metric&appid=${apiKey}`;
+      url.search = `?q=${searchText}&units=metric&appid=${apiKey}`;
+      if (ignore) return;
       const response = await fetch(url);
       const json = await response.json();
       setWeatherData({ ...json });
@@ -17,61 +35,23 @@ export default ({ city = "Copenhagen" }) => {
     }
   };
 
-  // example response
-  /* {
-    coord: { lon: 12.5655, lat: 55.6759 },
-    weather: [
-      { id: 801, main: "Clouds", description: "few clouds", icon: "02d" },
-    ],
-    base: "stations",
-    main: {
-      temp: 285.87,
-      feels_like: 285.34,
-      temp_min: 284.76,
-      temp_max: 288.37,
-      pressure: 1025,
-      humidity: 82,
-    },
-    visibility: 10000,
-    wind: { speed: 2.57, deg: 50 },
-    clouds: { all: 20 },
-    dt: 1715415614,
-    sys: {
-      type: 1,
-      id: 1575,
-      country: "DK",
-      sunrise: 1715396730,
-      sunset: 1715454408,
-    },
-    timezone: 7200,
-    id: 2618425,
-    name: "Copenhagen",
-    cod: 200,
-  };
-  */
-
   useEffect(() => {
-    fetchWeatherData();
+    let ignore = false;
+    fetchWeatherData(ignore);
+    return () => {
+      console.log(true);
+      ignore = true;
+    };
   }, []);
-
-  const getWindDirection = (angle) => {
-    const directions = [
-      "↓ N",
-      "↙ NE",
-      "← E",
-      "↖ SE",
-      "↑ S",
-      "↗ SW",
-      "→ W",
-      "↘ NW",
-    ];
-    return directions[Math.round(angle / 45) % 8];
-  };
 
   const handleInputChange = (event) => {
     const name = event.target.value;
-    console.log(name);
-    if (name || name === "") setCity(name);
+    setSearchText(name);
+  };
+
+  const handleSearchClick = () => {
+    updateNavigation();
+    fetchWeatherData();
   };
 
   return (
@@ -101,16 +81,26 @@ export default ({ city = "Copenhagen" }) => {
                   type="text"
                   className="form-control"
                   id="city"
-                  value={text}
+                  value={searchText}
                   placeholder="City"
                   onChange={handleInputChange}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSearchClick();
+                      // TODO: Set loading
+                      // TODO: Set errors
+                    }
+                  }}
                 />
               </div>
               <button
                 type="button"
                 onClick={(e) => {
-                  fetchWeatherData();
                   e.preventDefault();
+                  handleSearchClick(e);
+                  // TODO: Set loading
+                  // TODO: Set errors
                 }}
                 className="btn btn-default"
               >
